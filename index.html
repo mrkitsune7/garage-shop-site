@@ -4,6 +4,10 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>GARAGE SHOP</title>
+
+  <!-- Cloudflare Turnstile -->
+  <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
+
   <style>
     :root{
       --glass: rgba(10, 10, 14, .45);
@@ -27,7 +31,6 @@
       overflow-x: hidden;
     }
 
-    /* Background image */
     .bg{
       position: fixed;
       inset: 0;
@@ -39,7 +42,6 @@
       z-index: -3;
     }
 
-    /* Neon rays + glow overlay */
     .rays{
       position: fixed;
       inset: -20%;
@@ -78,7 +80,6 @@
       opacity: .9;
     }
 
-    /* Subtle noise */
     .noise{
       position: fixed;
       inset: 0;
@@ -110,28 +111,6 @@
       overflow: hidden;
     }
 
-    /* Neon edge */
-    .card::before{
-      content:"";
-      position:absolute;
-      inset: -2px;
-      border-radius: 24px;
-      padding: 2px;
-      background: linear-gradient(120deg,
-        rgba(var(--neon-orange), .45),
-        rgba(var(--neon-purple), .40),
-        rgba(var(--neon-blue), .32),
-        rgba(var(--neon-pink), .35));
-      -webkit-mask:
-        linear-gradient(#000 0 0) content-box,
-        linear-gradient(#000 0 0);
-      -webkit-mask-composite: xor;
-      mask-composite: exclude;
-      opacity: .65;
-      filter: blur(.2px);
-      pointer-events: none;
-    }
-
     .brand{
       text-align: center;
       margin-bottom: 18px;
@@ -141,15 +120,6 @@
       letter-spacing: .08em;
       font-size: clamp(22px, 4.5vw, 34px);
       text-transform: uppercase;
-      text-shadow:
-        0 0 14px rgba(var(--neon-orange), .25),
-        0 0 22px rgba(var(--neon-purple), .18);
-    }
-    .brand p{
-      margin: 0;
-      color: var(--muted);
-      font-size: 14px;
-      letter-spacing: .03em;
     }
 
     .btns{
@@ -163,129 +133,82 @@
       align-items: center;
       justify-content: center;
       gap: 10px;
-      padding: 14px 14px;
+      padding: 14px;
       text-decoration: none;
       color: var(--text);
       border-radius: 16px;
       border: 1px solid rgba(255,255,255,.12);
       background: rgba(12,12,18,.42);
-      backdrop-filter: blur(10px);
-      box-shadow: 0 10px 30px rgba(0,0,0,.35);
-      position: relative;
-      overflow: hidden;
-      transform: translateZ(0);
-      transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease;
       font-weight: 700;
-      letter-spacing: .02em;
     }
 
-    .btn::before{
-      content:"";
-      position:absolute;
-      inset:-40%;
-      background: radial-gradient(circle at 30% 30%,
-        rgba(var(--neon-orange), .20),
-        rgba(var(--neon-purple), .14),
-        rgba(var(--neon-blue), .10),
-        rgba(0,0,0,0) 60%);
-      filter: blur(10px);
-      opacity: .9;
-      transform: rotate(12deg);
-      transition: opacity .18s ease;
+    /* GATE */
+    #gate{
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,.7);
+      backdrop-filter: blur(14px);
+      display: grid;
+      place-items: center;
+      z-index: 9999;
     }
-
-    .btn:hover{
-      transform: translateY(-2px);
-      border-color: rgba(255,255,255,.22);
-      box-shadow:
-        0 16px 44px rgba(0,0,0,.45),
-        0 0 26px rgba(var(--neon-orange), .14),
-        0 0 28px rgba(var(--neon-purple), .12);
-    }
-    .btn:hover::before{ opacity: 1; }
-
-    .tag{
-      font-size: 12px;
-      font-weight: 800;
-      padding: 6px 10px;
-      border-radius: 999px;
-      border: 1px solid rgba(255,255,255,.14);
-      background: rgba(0,0,0,.22);
-      box-shadow:
-        0 0 18px rgba(var(--neon-orange), .10),
-        0 0 18px rgba(var(--neon-purple), .08);
-      white-space: nowrap;
-    }
-
-    .footer{
-      margin-top: 14px;
-      text-align: center;
-      font-size: 12px;
-      color: rgba(255,255,255,.58);
-    }
-
-    /* Different neon accents per button */
-    .b1 { --acc: var(--neon-orange); }
-    .b2 { --acc: var(--neon-purple); }
-    .b3 { --acc: var(--neon-blue); }
-    .b4 { --acc: var(--neon-pink); }
-
-    .btn .dot{
-      width: 10px; height: 10px;
-      border-radius: 999px;
-      background: rgba(var(--acc), .95);
-      box-shadow: 0 0 12px rgba(var(--acc), .65), 0 0 22px rgba(var(--acc), .35);
-      position: relative;
-      z-index: 1;
-    }
-    .btn span, .btn strong { position: relative; z-index: 1; }
-
-    @media (max-width: 420px){
-      .btn{ padding: 13px 12px; border-radius: 14px; }
-      .tag{ display:none; }
-    }
+    #gate.hidden{ display:none; }
   </style>
 </head>
+
 <body>
   <div class="bg"></div>
   <div class="rays"></div>
   <div class="noise"></div>
 
+  <!-- CAPTCHA GATE -->
+  <div id="gate">
+    <div style="background:rgba(15,15,20,.85);border-radius:18px;padding:24px;text-align:center;">
+      <h2>Проверка</h2>
+      <p>Поставьте галочку, чтобы войти на сайт</p>
+
+      <div
+        class="cf-turnstile"
+        data-sitekey="0x4AAAAAACKuP6iyEnS5UDQ5"
+        data-theme="dark"
+        data-callback="onHuman">
+      </div>
+    </div>
+  </div>
+
+  <!-- SITE -->
   <main class="wrap">
     <section class="card">
       <div class="brand">
         <h1>GARAGE SHOP</h1>
-        <p> ЛУЧШИЕ В ТВОЕМ ГОРОДЕ</p>
+        <p>ЛУЧШИЕ В ТВОЕМ ГОРОДЕ</p>
       </div>
 
       <div class="btns">
-        <a class="btn b1" href="http://t.me/grg4shop_bot" target="_blank" rel="noopener">
-          <span class="dot"></span>
-          <strong>БОТ ПОКУПКА 24/7</strong>
-          <span class="tag">Telegram</span>
-        </a>
-
-        <a class="btn b2" href="http://t.me/grg_supp" target="_blank" rel="noopener">
-          <span class="dot"></span>
-          <strong>SUPPORT</strong>
-          <span class="tag">Help</span>
-        </a>
-
-        <a class="btn b3" href="http://t.me/+wcesFWcY6FczNGYx" target="_blank" rel="noopener">
-          <span class="dot"></span>
-          <strong>КАНАЛ</strong>
-          <span class="tag">News</span>
-        </a>
-
-        <a class="btn b4" href="http://t.me/+wcesFWcY6FczNGYx" target="_blank" rel="noopener">
-          <span class="dot"></span>
-          <strong>ЧАТ</strong>
-          <span class="tag">Chat</span>
-        </a>
+        <a class="btn" href="http://t.me/grg4shop_bot" target="_blank">БОТ ПОКУПКА 24/7</a>
+        <a class="btn" href="http://t.me/grg_supp" target="_blank">SUPPORT</a>
+        <a class="btn" href="http://t.me/+wcesFWcY6FczNGYx" target="_blank">КАНАЛ</a>
+        <a class="btn" href="http://t.me/+wcesFWcY6FczNGYx" target="_blank">ЧАТ</a>
       </div>
-
-      <div class="footer">© GARAGE SHOP</div>
     </section>
   </main>
+
+  <script>
+    const KEY = "grg24_verified";
+    const gate = document.getElementById("gate");
+
+    function unlock(){
+      gate.classList.add("hidden");
+      try{ localStorage.setItem(KEY,"1"); }catch(e){}
+    }
+
+    try{
+      if(localStorage.getItem(KEY)==="1") unlock();
+    }catch(e){}
+
+    window.onHuman = function(){
+      unlock();
+    };
+  </script>
 </body>
 </html>
